@@ -1,0 +1,123 @@
+name: monitoring
+
+networks:
+  monitor:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: prometheus
+    restart: unless-stopped
+    user: "65534:65534"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=90d
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "172.16.0.6:9090:9090"
+    networks: [monitor]
+
+  grafana:
+    image: grafana/grafana:13.1.0
+    container_name: grafana
+    restart: unless-stopped
+    depends_on: [prometheus]
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_SERVER_ROOT_URL: "https://${GRAFANA_DOMAIN}"
+      GF_SERVER_DOMAIN: "${GRAFANA_DOMAIN}"
+      GF_SERVER_ENFORCE_DOMAIN: "false"
+      GF_AUTH_JWT_ENABLED: "true"
+      GF_AUTH_JWT_HEADER_NAME: "Cf-Access-Jwt-Assertion"
+      GF_AUTH_JWT_EMAIL_CLAIM: "email"
+      GF_AUTH_JWT_USERNAME_CLAIM: "email"
+      GF_AUTH_JWT_JWK_SET_URL: "https://${CF_TEAM_DOMAIN}.cloudflareaccess.com/cdn-cgi/access/certs"
+      GF_AUTH_JWT_EXPECT_CLAIMS: '{"aud":"${CF_ACCESS_AUD}"}'
+      GF_AUTH_JWT_AUTO_SIGN_UP: "true"
+      GF_AUTH_JWT_ROLE_ATTRIBUTE_PATH: "'Admin'"
+      GF_USERS_DEFAULT_THEME: "light"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: "/var/lib/grafana/dashboards/home-monitoring.json"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "172.16.0.6:3000:3000"
+    networks: [monitor]
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.27.0
+    container_name: blackbox
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./blackbox:/etc/blackbox:ro
+    cap_add:
+      - NET_RAW
+    sysctls:
+      net.ipv4.ping_group_range: "0 2147483647"
+    ports:
+      - "172.16.0.6:9115:9115"
+    networks: [monitor]
+
+  pushgateway:
+    image: prom/pushgateway:v1.11.1
+    container_name: pushgateway
+    restart: unless-stopped
+    command:
+      - --persistence.file=/data/pushgateway.store
+      - --persistence.interval=5m
+    volumes:
+      - ./pushgateway/data:/data
+    ports:
+      - "172.16.0.6:9091:9091"
+    networks: [monitor]
+
+  iperf3-runner:
+    build: ./iperf3
+    container_name: iperf3-runner
+    restart: unless-stopped
+    depends_on: [pushgateway]
+    environment:
+      IPERF_HOST: "77.246.100.146"
+      IPERF_PORT: "46632"
+      IPERF_TIME: "10"
+      IPERF_PARALLEL: "4"
+      INTERVAL: "600"
+      PUSHGATEWAY: "http://pushgateway:9091"
+      JOB: "iperf3"
+      INSTANCE: "vps"
+    networks: [monitor]
+
+  mktxp:
+    image: ghcr.io/akpw/mktxp:latest
+    container_name: mktxp
+    restart: unless-stopped
+    volumes:
+      - ./mktxp:/home/mktxp/mktxp
+    ports:
+      - "172.16.0.6:49090:49090"
+    networks: [monitor]
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.8.1
+    container_name: cloudflared
+    restart: unless-stopped
+    depends_on: [grafana]
+    command: tunnel --no-autoupdate --protocol http2 run --token ${CF_TUNNEL_TOKEN}
+    networks: [monitor]

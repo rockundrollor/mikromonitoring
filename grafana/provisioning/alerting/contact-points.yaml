@@ -1,0 +1,38 @@
+# Grafana alerting provisioning
+# Файл в формате JSON — это валидный YAML.
+{
+  "apiVersion": 1,
+  "contactPoints": [
+    {
+      "orgId": 1,
+      "name": "telegram",
+      "receivers": [
+        {
+          "uid": "telegram-main",
+          "type": "telegram",
+          "settings": {
+            "bottoken": "$TELEGRAM_BOT_TOKEN",
+            "chatid": "$TELEGRAM_CHAT_ID",
+            "parse_mode": "HTML",
+            "disable_notifications": false,
+            "message": "{{ if eq .Status \"firing\" }}🔴{{ else }}🟢{{ end }} <b>{{ .Status | toUpper }}</b>\n\n{{ range .Alerts }}<b>{{ .Labels.alertname }}</b>\n{{ .Annotations.summary }}\n{{ if .Annotations.description }}<i>{{ .Annotations.description }}</i>\n{{ end }}\n{{ end }}"
+          },
+          "disableResolveMessage": false
+        }
+      ]
+    }
+  ],
+  "policies": [
+    {
+      "orgId": 1,
+      "receiver": "telegram",
+      "group_by": [
+        "alertname",
+        "instance"
+      ],
+      "group_wait": "30s",
+      "group_interval": "5m",
+      "repeat_interval": "6h"
+    }
+  ]
+}

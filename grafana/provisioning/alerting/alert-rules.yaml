@@ -1,0 +1,483 @@
+# Grafana alerting provisioning
+# Файл в формате JSON — это валидный YAML.
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "home",
+      "folder": "Алерты",
+      "interval": "1m",
+      "rules": [
+        {
+          "uid": "iperf-slow",
+          "title": "Скорость канала ниже 30 Мбит/с",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 1800,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "editorMode": "code",
+                "expr": "label_replace({__name__=~\"iperf3_(download|upload)_bits_per_second\"}, \"direction\", \"$1\", \"__name__\", \"iperf3_(.*)_bits_per_second\") / 1e6",
+                "instant": true,
+                "range": false,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "lt",
+                      "params": [
+                        30
+                      ]
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "A"
+                      ]
+                    },
+                    "reducer": {
+                      "type": "last",
+                      "params": []
+                    },
+                    "type": "query"
+                  }
+                ],
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "15m",
+          "labels": {
+            "severity": "warning",
+            "component": "internet"
+          },
+          "annotations": {
+            "summary": "Канал {{ $labels.direction }}: {{ humanize $values.A.Value }} Мбит/с",
+            "description": "Замеры iperf3 держатся ниже 30 Мбит/с дольше 15 минут. Проверьте загрузку канала и связь с провайдером."
+          },
+          "isPaused": false
+        },
+        {
+          "uid": "iperf-stale",
+          "title": "Замеры скорости не обновляются",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "editorMode": "code",
+                "expr": "time() - iperf3_last_run_timestamp_seconds",
+                "instant": true,
+                "range": false,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        1800
+                      ]
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "A"
+                      ]
+                    },
+                    "reducer": {
+                      "type": "last",
+                      "params": []
+                    },
+                    "type": "query"
+                  }
+                ],
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "5m",
+          "labels": {
+            "severity": "warning",
+            "component": "internet"
+          },
+          "annotations": {
+            "summary": "Последний замер был {{ humanizeDuration $values.A.Value }} назад",
+            "description": "Контейнер iperf3-runner не присылал результат дольше 30 минут. Pushgateway продолжает отдавать старое значение, поэтому правило по скорости канала сейчас недостоверно."
+          },
+          "isPaused": false
+        },
+        {
+          "uid": "iface-down",
+          "title": "Интерфейс Mikrotik не работает",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "editorMode": "code",
+                "expr": "mktxp_interface_running{name=~\"ISP|NAS|WS|VMWare|Aruba New|wireguard\"}",
+                "instant": true,
+                "range": false,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "lt",
+                      "params": [
+                        1
+                      ]
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "A"
+                      ]
+                    },
+                    "reducer": {
+                      "type": "last",
+                      "params": []
+                    },
+                    "type": "query"
+                  }
+                ],
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "2m",
+          "labels": {
+            "severity": "critical",
+            "component": "mikrotik"
+          },
+          "annotations": {
+            "summary": "Интерфейс {{ $labels.name }} не поднят",
+            "description": "Интерфейс {{ $labels.name }} на роутере перешёл в состояние down и держится так дольше двух минут."
+          },
+          "isPaused": false
+        },
+        {
+          "uid": "exporter-down",
+          "title": "Экспортёр недоступен",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "editorMode": "code",
+                "expr": "up{job!~\"icmp|tcp\"}",
+                "instant": true,
+                "range": false,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "lt",
+                      "params": [
+                        1
+                      ]
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "A"
+                      ]
+                    },
+                    "reducer": {
+                      "type": "last",
+                      "params": []
+                    },
+                    "type": "query"
+                  }
+                ],
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "3m",
+          "labels": {
+            "severity": "critical",
+            "component": "monitoring"
+          },
+          "annotations": {
+            "summary": "{{ $labels.job }} ({{ $labels.instance }}) не отвечает",
+            "description": "Prometheus не может снять метрики с {{ $labels.instance }} дольше трёх минут. Правила, опирающиеся на эти метрики, сейчас недостоверны."
+          },
+          "isPaused": false
+        },
+        {
+          "uid": "icmp-loss",
+          "title": "Потери пакетов выше 5%",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "editorMode": "code",
+                "expr": "(1 - avg_over_time(probe_success{job=\"icmp\"}[10m])) * 100",
+                "instant": true,
+                "range": false,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        5
+                      ]
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "A"
+                      ]
+                    },
+                    "reducer": {
+                      "type": "last",
+                      "params": []
+                    },
+                    "type": "query"
+                  }
+                ],
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "5m",
+          "labels": {
+            "severity": "warning",
+            "component": "network"
+          },
+          "annotations": {
+            "summary": "Потери до {{ $labels.instance }}: {{ humanize $values.A.Value }}%",
+            "description": "За последние 10 минут потеряно более 5% ICMP-проб до {{ $labels.instance }}. Окно 10 минут — 40 проб, шаг 2.5%."
+          },
+          "isPaused": false
+        },
+        {
+          "uid": "icmp-down",
+          "title": "Узел недоступен по ICMP",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "editorMode": "code",
+                "expr": "probe_success{job=\"icmp\"}",
+                "instant": true,
+                "range": false,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "lt",
+                      "params": [
+                        1
+                      ]
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "A"
+                      ]
+                    },
+                    "reducer": {
+                      "type": "last",
+                      "params": []
+                    },
+                    "type": "query"
+                  }
+                ],
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "2m",
+          "labels": {
+            "severity": "critical",
+            "component": "network"
+          },
+          "annotations": {
+            "summary": "{{ $labels.instance }} не отвечает",
+            "description": "ICMP-пробы до {{ $labels.instance }} не проходят дольше двух минут."
+          },
+          "isPaused": false
+        }
+      ]
+    }
+  ]
+}
