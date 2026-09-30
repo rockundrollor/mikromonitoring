@@ -322,6 +322,84 @@
           "isPaused": false
         },
         {
+          "uid": "container-restarts",
+          "title": "Контейнер перезапускается",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "relativeTimeRange": {
+                "from": 3600,
+                "to": 0
+              },
+              "datasourceUid": "prometheus",
+              "model": {
+                "refId": "A",
+                "editorMode": "code",
+                "expr": "sum by(name, host) (changes(container_start_time_seconds{job=~\"cadvisor.*\",name!=\"\"}[1h]))",
+                "instant": true,
+                "range": false,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "refId": "C",
+                "type": "threshold",
+                "expression": "A",
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "type": "gt",
+                      "params": [
+                        3
+                      ]
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "A"
+                      ]
+                    },
+                    "reducer": {
+                      "type": "last",
+                      "params": []
+                    },
+                    "type": "query"
+                  }
+                ],
+                "intervalMs": 1000,
+                "maxDataPoints": 43200
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "for": "5m",
+          "labels": {
+            "severity": "warning",
+            "component": "docker"
+          },
+          "annotations": {
+            "summary": "{{ $labels.name }} на {{ $labels.host }}: {{ $values.A.Value }} перезапуска за час",
+            "description": "Контейнер {{ $labels.name }} перезапускался больше трёх раз за час. Обычно это падение по ошибке и рестарт политикой restart: unless-stopped."
+          },
+          "isPaused": false
+        },
+        {
           "uid": "icmp-loss",
           "title": "Потери пакетов выше 5%",
           "condition": "C",

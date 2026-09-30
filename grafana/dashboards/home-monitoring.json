@@ -2364,7 +2364,7 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 8,
+        "w": 6,
         "x": 0,
         "y": 40
       },
@@ -2459,8 +2459,8 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 8,
-        "x": 8,
+        "w": 6,
+        "x": 6,
         "y": 40
       },
       "fieldConfig": {
@@ -2546,6 +2546,101 @@
     {
       "id": 33,
       "type": "timeseries",
+      "title": "Swap, %",
+      "description": "Если swap не настроен, панель покажет No data — делитель отфильтрован условием > 0.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 12,
+        "y": 40
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "min": 0,
+          "max": 100,
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(node_memory_SwapTotal_bytes{job=\"vps-node\"} - node_memory_SwapFree_bytes{job=\"vps-node\"}) / (node_memory_SwapTotal_bytes{job=\"vps-node\"} > 0) * 100",
+          "legendFormat": "используется",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "type": "timeseries",
       "title": "Сеть VPS",
       "description": "",
       "datasource": {
@@ -2554,8 +2649,8 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 8,
-        "x": 16,
+        "w": 6,
+        "x": 18,
         "y": 40
       },
       "fieldConfig": {
@@ -2649,9 +2744,9 @@
       ]
     },
     {
-      "id": 34,
+      "id": 35,
       "type": "row",
-      "title": "Mikrotik CCR1009",
+      "title": "Docker-контейнеры — $host",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -2662,7 +2757,825 @@
       "panels": []
     },
     {
-      "id": 35,
+      "id": 36,
+      "type": "stat",
+      "title": "Контейнеров запущено",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 48
+      },
+      "maxDataPoints": 100,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "count(container_last_seen{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"})",
+          "legendFormat": "",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "type": "stat",
+      "title": "Перезапусков за 24 ч",
+      "description": "Считается по изменению времени старта контейнера.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 48
+      },
+      "maxDataPoints": 100,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(changes(container_start_time_seconds{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"}[24h]))",
+          "legendFormat": "",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "type": "stat",
+      "title": "CPU всеми контейнерами",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 48
+      },
+      "maxDataPoints": 100,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"}[5m])) * 100",
+          "legendFormat": "",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "type": "stat",
+      "title": "Память всеми контейнерами",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 48
+      },
+      "maxDataPoints": 100,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 1,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(container_memory_working_set_bytes{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"})",
+          "legendFormat": "",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "type": "timeseries",
+      "title": "CPU по контейнерам, %",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 52
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "min": 0,
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(name) (rate(container_cpu_usage_seconds_total{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"}[5m])) * 100",
+          "legendFormat": "{{name}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "type": "timeseries",
+      "title": "Память по контейнерам",
+      "description": "Working set — фактически используемая память без кеша, именно по ней срабатывает OOM-killer.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 52
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(name) (container_memory_working_set_bytes{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"})",
+          "legendFormat": "{{name}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "type": "timeseries",
+      "title": "Сеть контейнеров",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 52
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "bps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(name) (rate(container_network_receive_bytes_total{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"}[5m])) * 8",
+          "legendFormat": "rx {{name}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(name) (rate(container_network_transmit_bytes_total{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"}[5m])) * 8",
+          "legendFormat": "tx {{name}}",
+          "instant": false,
+          "range": true,
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "type": "table",
+      "title": "Контейнеры",
+      "description": "Аптайм считается от времени старта контейнера.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false,
+            "filterable": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU, %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Память"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Аптайм"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Перезапусков 24ч"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 5
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Память"
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "name",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true
+            },
+            "renameByName": {
+              "name": "Контейнер",
+              "Value #A": "CPU, %",
+              "Value #B": "Память",
+              "Value #C": "Аптайм",
+              "Value #D": "Перезапусков 24ч"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(name) (rate(container_cpu_usage_seconds_total{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"}[5m])) * 100",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "legendFormat": "",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(name) (container_memory_working_set_bytes{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"})",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "legendFormat": "",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "time() - max by(name) (container_start_time_seconds{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"})",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "legendFormat": "",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(name) (changes(container_start_time_seconds{job=~\"cadvisor.*\",host=\"$host\",name!=\"\"}[24h]))",
+          "format": "table",
+          "instant": true,
+          "range": false,
+          "legendFormat": "",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "type": "row",
+      "title": "Mikrotik CCR1009",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 69
+      },
+      "panels": []
+    },
+    {
+      "id": 45,
       "type": "stat",
       "title": "Роутер",
       "description": "",
@@ -2674,7 +3587,7 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 48
+        "y": 70
       },
       "maxDataPoints": 100,
       "fieldConfig": {
@@ -2748,7 +3661,7 @@
       ]
     },
     {
-      "id": 36,
+      "id": 46,
       "type": "stat",
       "title": "Uptime",
       "description": "",
@@ -2760,7 +3673,7 @@
         "h": 4,
         "w": 3,
         "x": 3,
-        "y": 48
+        "y": 70
       },
       "maxDataPoints": 100,
       "fieldConfig": {
@@ -2814,7 +3727,7 @@
       ]
     },
     {
-      "id": 37,
+      "id": 47,
       "type": "bargauge",
       "title": "Загрузка ресурсов",
       "datasource": {
@@ -2825,7 +3738,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 48
+        "y": 70
       },
       "maxDataPoints": 100,
       "fieldConfig": {
@@ -2916,7 +3829,7 @@
       ]
     },
     {
-      "id": 38,
+      "id": 48,
       "type": "gauge",
       "title": "Температура платы",
       "datasource": {
@@ -2927,7 +3840,7 @@
         "h": 4,
         "w": 3,
         "x": 12,
-        "y": 48
+        "y": 70
       },
       "fieldConfig": {
         "defaults": {
@@ -2986,7 +3899,7 @@
       ]
     },
     {
-      "id": 39,
+      "id": 49,
       "type": "gauge",
       "title": "Температура CPU",
       "datasource": {
@@ -2997,7 +3910,7 @@
         "h": 4,
         "w": 3,
         "x": 15,
-        "y": 48
+        "y": 70
       },
       "fieldConfig": {
         "defaults": {
@@ -3056,7 +3969,7 @@
       ]
     },
     {
-      "id": 40,
+      "id": 50,
       "type": "stat",
       "title": "DHCP аренды",
       "description": "",
@@ -3068,7 +3981,7 @@
         "h": 4,
         "w": 3,
         "x": 18,
-        "y": 48
+        "y": 70
       },
       "maxDataPoints": 100,
       "fieldConfig": {
@@ -3122,7 +4035,7 @@
       ]
     },
     {
-      "id": 41,
+      "id": 51,
       "type": "stat",
       "title": "Соединений",
       "description": "",
@@ -3134,7 +4047,7 @@
         "h": 4,
         "w": 3,
         "x": 21,
-        "y": 48
+        "y": 70
       },
       "maxDataPoints": 100,
       "fieldConfig": {
@@ -3188,7 +4101,7 @@
       ]
     },
     {
-      "id": 42,
+      "id": 52,
       "type": "timeseries",
       "title": "Температура",
       "description": "Температура платформы и процессора роутера.",
@@ -3200,7 +4113,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 52
+        "y": 74
       },
       "fieldConfig": {
         "defaults": {
@@ -3293,7 +4206,7 @@
       ]
     },
     {
-      "id": 43,
+      "id": 53,
       "type": "timeseries",
       "title": "CPU и память роутера",
       "description": "",
@@ -3305,7 +4218,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 52
+        "y": 74
       },
       "fieldConfig": {
         "defaults": {
@@ -3400,7 +4313,7 @@
       ]
     },
     {
-      "id": 44,
+      "id": 54,
       "type": "row",
       "title": "Трафик по интерфейсам",
       "collapsed": false,
@@ -3408,12 +4321,12 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 81
       },
       "panels": []
     },
     {
-      "id": 45,
+      "id": 55,
       "type": "timeseries",
       "title": "ISP",
       "description": "Приём вверх, передача вниз.",
@@ -3425,7 +4338,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 60
+        "y": 82
       },
       "fieldConfig": {
         "defaults": {
@@ -3552,7 +4465,7 @@
       ]
     },
     {
-      "id": 46,
+      "id": 56,
       "type": "timeseries",
       "title": "NAS",
       "description": "Приём вверх, передача вниз.",
@@ -3564,7 +4477,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 60
+        "y": 82
       },
       "fieldConfig": {
         "defaults": {
@@ -3691,7 +4604,7 @@
       ]
     },
     {
-      "id": 47,
+      "id": 57,
       "type": "timeseries",
       "title": "WS",
       "description": "Приём вверх, передача вниз.",
@@ -3703,7 +4616,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 60
+        "y": 82
       },
       "fieldConfig": {
         "defaults": {
@@ -3830,7 +4743,7 @@
       ]
     },
     {
-      "id": 48,
+      "id": 58,
       "type": "timeseries",
       "title": "VMWare",
       "description": "Приём вверх, передача вниз.",
@@ -3842,7 +4755,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 68
+        "y": 90
       },
       "fieldConfig": {
         "defaults": {
@@ -3969,7 +4882,7 @@
       ]
     },
     {
-      "id": 49,
+      "id": 59,
       "type": "timeseries",
       "title": "Aruba New",
       "description": "Приём вверх, передача вниз.",
@@ -3981,7 +4894,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 68
+        "y": 90
       },
       "fieldConfig": {
         "defaults": {
@@ -4108,7 +5021,7 @@
       ]
     },
     {
-      "id": 50,
+      "id": 60,
       "type": "timeseries",
       "title": "wireguard",
       "description": "Приём вверх, передача вниз.",
@@ -4120,7 +5033,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 68
+        "y": 90
       },
       "fieldConfig": {
         "defaults": {
@@ -4247,7 +5160,7 @@
       ]
     },
     {
-      "id": 51,
+      "id": 61,
       "type": "timeseries",
       "title": "Ошибки и потери на интерфейсах",
       "description": "В норме — ноль. Устойчивый рост стоит разобрать.",
@@ -4259,7 +5172,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 76
+        "y": 98
       },
       "fieldConfig": {
         "defaults": {
@@ -4385,7 +5298,31 @@
     "mikrotik"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "host",
+        "label": "Хост",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(container_last_seen, host)",
+        "query": {
+          "qryType": 1,
+          "query": "label_values(container_last_seen, host)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "sort": 1,
+        "current": {},
+        "options": [],
+        "hide": 0,
+        "skipUrlSync": false
+      }
+    ]
   },
   "time": {
     "from": "now-6h",
@@ -4395,6 +5332,6 @@
   "timezone": "browser",
   "title": "Домашний мониторинг",
   "uid": "home-monitoring",
-  "version": 5,
+  "version": 10,
   "weekStart": ""
 }

@@ -94,7 +94,7 @@ services:
     restart: unless-stopped
     depends_on: [pushgateway]
     environment:
-      IPERF_HOST: "77.246.100.146"
+      IPERF_HOST: "<HOST_IP>"
       IPERF_PORT: "46632"
       IPERF_TIME: "10"
       IPERF_PARALLEL: "4"
@@ -102,6 +102,27 @@ services:
       PUSHGATEWAY: "http://pushgateway:9091"
       JOB: "iperf3"
       INSTANCE: "vps"
+    networks: [monitor]
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=15s
+      - --store_container_labels=false
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "172.16.0.6:48080:8080"
     networks: [monitor]
 
   mktxp:

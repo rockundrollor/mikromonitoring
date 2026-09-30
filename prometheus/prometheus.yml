@@ -13,7 +13,7 @@ scrape_configs:
 
   - job_name: vps-node
     static_configs:
-      - targets: ['1.2.3.4:1111']
+      - targets: ['<NODE_IP>:46631']
         labels:
           host: vps
 
@@ -26,7 +26,8 @@ scrape_configs:
       - targets:
           - 1.1.1.1
           - 8.8.8.8
-          # Add ther targets here
+          - NODE_IP
+
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -42,8 +43,7 @@ scrape_configs:
       module: [tcp_connect]
     static_configs:
       - targets:
-          - 1.2.3.4:443
-          # Add targets here
+          - <NODE_IP>:9003
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -66,3 +66,17 @@ scrape_configs:
   - job_name: blackbox
     static_configs:
       - targets: ['blackbox:9115']
+
+  - job_name: cadvisor
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          host: monitoring
+
+  - job_name: cadvisor-vps
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['<NODE_IP>:46634']
+        labels:
+          host: vps
