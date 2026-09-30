@@ -25,11 +25,13 @@ Prometheus + Grafana в Docker: состояние VPS, скорость инт�
 | `pushgateway` | приём результатов iperf3 | 9091 |
 | `iperf3-runner` | замер скорости раз в 10 минут | — |
 | `mktxp` | метрики Mikrotik по RouterOS API | 49090 |
+| `cadvisor` | метрики Docker-контейнеров | 48080 |
 | `cloudflared` | туннель наружу | — |
 
 ### Внешние компоненты
 
-- **VPS** (`VPS_IP`): `node_exporter` на `:46631`, `iperf3 -s` на `:46632`
+- **VPS** (`VPS_IP`): `node_exporter` на `:46631`, `iperf3 -s` на `:46632`,
+  `cAdvisor` на `:46634`
 - **`TEAM_DOMAIN`** — team domain Cloudflare Zero Trust
 - **Mikrotik** (`172.16.0.1`): RouterOS API на `:8728`
 - **Cloudflare**: туннель на `monitor.example.com`, Access с Google
@@ -208,6 +210,20 @@ scrape_configs:
     static_configs:
       - targets: ['blackbox:9115']
 
+  - job_name: cadvisor
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          host: monitoring
+
+  - job_name: cadvisor-vps
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['VPS_IP:46634']
+        labels:
+          host: vps
+
   - job_name: icmp
     metrics_path: /probe
     scrape_interval: 15s
@@ -252,6 +268,12 @@ scrape_configs:
 
 **Интервал Mikrotik — 60 секунд**, таймаут 30. mktxp за один скрейп делает десятки
 API-запросов к роутеру; дефолтных 10 секунд ему не хватает.
+
+**Метка `host` у обоих job'ов cAdvisor обязательна** — по ней работает переменная
+`$host` в дашборде. Отступ у `labels:` — на уровне `targets:`, внутри того же
+элемента списка; без метки выпадающий список хостов останется пустым.
+Внутри docker-сети локальный cAdvisor скрейпится по порту контейнера `8080`,
+а не по проброшенному `48080`.
 
 **Отдельный job `blackbox`** нужен для алерта на недоступность экспортёра. В job'ах
 `icmp` и `tcp` метка `instance` относится к целям проб, а не к самому blackbox —
@@ -506,6 +528,39 @@ Pushgateway работает от `nobody`; без `chown` персистент�
 
 ---
 
+### cAdvisor на VPS
+
+Локальный cAdvisor описан в `docker-compose.yml`; на VPS он ставится отдельно.
+
+```bash
+docker run -d --name cadvisor --restart unless-stopped \
+  --privileged \
+  --device=/dev/kmsg \
+  -p 46634:8080 \
+  -v /:/rootfs:ro \
+  -v /var/run:/var/run:ro \
+  -v /sys:/sys:ro \
+  -v /var/lib/docker/:/var/lib/docker:ro \
+  -v /dev/disk/:/dev/disk:ro \
+  gcr.io/cadvisor/cadvisor:v0.52.1 \
+  --docker_only=true --housekeeping_interval=15s --store_container_labels=false
+```
+
+Порт открыть только своему адресу:
+
+```bash
+sudo ufw allow from ВАШ_IP to any port 46634 proto tcp
+curl -s localhost:46634/metrics | grep -c '^container_'
+```
+
+Экспортёры на VPS (`node_exporter`, `cAdvisor`) отдают метрики открытым текстом
+без аутентификации — ограничение по source IP здесь единственная защита.
+
+Отдельного правила для них не нужно: «Экспортёр недоступен» покрывает все job'ы,
+кроме `icmp` и `tcp`.
+
+---
+
 ## 5. Grafana: provisioning
 
 ### `grafana/provisioning/datasources/prometheus.yml`
@@ -556,16 +611,31 @@ providers:
 
 ### `grafana/dashboards/home-monitoring.json`
 
-Дашборд с пятью рядами:
+Дашборд с шестью рядами:
 
 1. **Интернет-канал** — текущие скорости, средние за час, возраст и статус замера,
    четыре графика, ретрансмиты TCP
 2. **Доступность внешних узлов** — статусы трёх ICMP-целей и TCP-пробы, потери за час,
    графики RTT, потерь и времени TCP-подключения
-3. **VPS** — доступность, uptime, bargauge загрузки, load average, графики CPU/память/сеть
-4. **Mikrotik** — статус, uptime, загрузка, температуры платы и CPU, DHCP, соединения
-5. **Трафик по интерфейсам** — отдельный график на каждый интерфейс, приём вверх,
+3. **VPS** — доступность, uptime, bargauge загрузки, load average, графики CPU,
+   памяти, swap и сети
+4. **Docker-контейнеры** — число контейнеров, перезапуски за сутки, суммарные CPU
+   и память, графики по контейнерам и сводная таблица
+5. **Mikrotik** — статус, uptime, загрузка, температуры платы и CPU, DHCP, соединения
+6. **Трафик по интерфейсам** — отдельный график на каждый интерфейс, приём вверх,
    передача вниз (`custom.transform: negative-Y`), плюс общий график ошибок
+
+Наверху дашборда — выпадающий список **Хост** со значениями из
+`label_values(container_last_seen, host)`. Он переключает весь ряд Docker между
+сервером мониторинга и VPS; заголовок ряда показывает текущий выбор. Селектор вместо
+дублирования панелей: третий хост подхватится сам, ничего править не нужно.
+
+Память контейнеров везде — `working_set`, а не `usage`: последняя включает страничный
+кеш и завышает цифры, а OOM-killer срабатывает именно по working set.
+
+График swap использует конструкцию `/ (node_memory_SwapTotal_bytes > 0)` — идиома
+PromQL против деления на ноль. Если swap не настроен, панель покажет «No data»
+вместо `NaN`.
 
 Передача отражается через override, а не умножением на `-1` в запросе — иначе тултип
 показывал бы отрицательные значения.
@@ -699,6 +769,27 @@ services:
       - "172.16.0.6:49090:49090"
     networks: [monitor]
 
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=15s
+      - --store_container_labels=false
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "172.16.0.6:48080:8080"
+    networks: [monitor]
+
   cloudflared:
     image: cloudflare/cloudflared:2025.8.1
     container_name: cloudflared
@@ -707,6 +798,11 @@ services:
     command: tunnel --no-autoupdate --protocol http2 run --token ${CF_TUNNEL_TOKEN}
     networks: [monitor]
 ```
+
+`--docker_only=true` отсекает системные cgroup-и, оставляя только контейнеры.
+`--store_container_labels=false` заметно сокращает число рядов: иначе каждый label
+контейнера превращается в метку метрики. Порт `48080` вместо стандартного `8080` —
+чтобы не столкнуться с чем-то ещё на хосте.
 
 Все значения, зависящие от установки, приходят из `.env` через `${VAR}` — Compose
 подставляет их и внутри одинарных кавычек, поэтому JSON в `GF_AUTH_JWT_EXPECT_CLAIMS`
@@ -833,6 +929,7 @@ curl -s "https://api.telegram.org/bot<ТОКЕН>/getUpdates" | python3 -m json.
 | Потери пакетов выше 5% | за окно 10 минут | 5 мин |
 | Узел недоступен по ICMP | `probe_success == 0` | 2 мин |
 | Экспортёр недоступен | `up{job!~"icmp\|tcp"} == 0` | 3 мин |
+| Контейнер перезапускается | `changes(container_start_time_seconds[1h]) > 3` | 5 мин |
 
 **Про пороги потерь.** ICMP скрейпится раз в 15 секунд, значит за 5 минут — 20 проб,
 и одна потерянная даёт ровно 5%. Порог «больше 2%» на таком окне бессмыслен. Поэтому
@@ -849,6 +946,11 @@ curl -s "https://api.telegram.org/bot<ТОКЕН>/getUpdates" | python3 -m json.
 
 `execErrState: Error` означает, что при недоступном Prometheus правила перейдут
 в состояние ошибки и уведомление придёт — молчания не будет.
+
+**Про порог перезапусков.** Три штуки за час выбраны, чтобы не реагировать на
+собственные `docker compose up -d` при правках конфигов: один-два рестарта — обычная
+рабочая ситуация, а цикл падений даёт десятки. Группировка по `name` и `host` —
+в уведомлении видно и контейнер, и машину.
 
 Правило скорости через `label_replace` разделяет download и upload на отдельные
 экземпляры — в уведомлении видно, какое направление просело.
@@ -933,6 +1035,13 @@ curl -s http://172.16.0.6:9091/metrics | grep '^iperf3_'
 
 # метрики Mikrotik
 curl -s http://172.16.0.6:49090/metrics | grep -c '^mktxp_'
+
+# контейнеры видны по обоим хостам
+curl -s 'http://172.16.0.6:9090/api/v1/query?query=count%20by(host)(container_last_seen{name!=""})' \
+  | python3 -m json.tool | grep -E 'host|value'
+
+# значения для переменной $host
+curl -s 'http://172.16.0.6:9090/api/v1/label/host/values'
 
 # внешний доступ
 curl -sI https://monitor.example.com/login | head -3
